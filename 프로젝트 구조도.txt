@@ -1,0 +1,100 @@
+리액트 타입스크립트
+
+src/
+  components/
+    home.tsx
+    upload.tsx
+    createDataset.tsx
+    updateDataset.tsx
+    training.tsx
+    test.tsx
+  pages/
+    homePage.tsx
+    addData.tsx
+    checkData.tsx
+    newModel.tsx
+    testModel.tsx
+  services/
+    api.ts
+  utils/
+    utils.ts
+  styles/
+    lyaout.css
+    home.css
+    upload.css
+    training.css
+    check.css
+    test.css
+  routes/
+    DataRouter.tsx
+    ModelRouter.tsx
+  database/
+    database.ts  
+  App.tsx
+  index.tsx
+
+- 대시보드 : home.tsx | homePage.tsx
+    - 현재 보유한 모델, 데이터, 프롬프트 목록 및 진행상황 표시
+- 데이터 업로드 페이지 : upload.tsx , createDataset.tsx | addData.tsx
+    - 데이터 업로드
+    - 레벨 별 데이터 셋+프롬프트 생성 및 저장 기능 추가
+- 데이터 검수 페이지 : updateDataset.tsx | checkData.tsx
+    - 데이터 검수 및 업데이트
+- 모델 생성 페이지 : training.tsx | newModel.tsx
+    - 저장된 데이터 셋 로드
+    - 새로운 ver. 모델 생성 후 저장
+    - 목록에서 알맞는 데이터셋 선택 + 저장될 모델 이름 입력 후 생성 버튼 클릭 → new model ver1으로 저장
+    - 이미 만들어진 모델일 경우 불러와서 재학습
+- 테스트 페이지 : test.tsx | testModel.tsx
+    - test : 모델 학습 후 테스트 실행하는 페이지
+- 실 배포 버튼 : 여러 버전의 모델 중 각 레벨 별 베이스 모델은 1개씩 선택 가능
+    - 대시보드에서 선택 및 저장 시 해당 모델이 각 레벨 별 default 모델이 됨.
+
+homePage.tsx : '/'
+  - 웹 애플리케이션 실행시 처음 보이는 페이지
+  - home 컴포넌트 호출
+
+  home.tsx
+    - 대시보드 페이지에 사용할 컴포넌트
+    - 현재 보유한 모델, 데이터, 프롬프트 목록 및 진행상황 표시
+
+addData.tsx : '/addData'
+  - 데이터 업로드 페이지
+  - upload, createDataset 컴포넌트 호출
+  - 업로드 및 데이터셋 생성 후 화면에 생성된 데이터셋 출력
+  - 검수 후 업데이트 및 저장 가능
+
+  upload.tsx
+    - 데이터 업로드 페이지에 사용할 컴포넌트
+    - 데이터 업로드 및 DB 저장 기능
+
+  createDataset.tsx
+    - 데이터 셋 생성 컴포넌트
+    - 데이터 셋 및 프롬프트 생성 및 DB 저장 기능
+  
+checkData.tsx : '/checkData'
+  - 업로드X 생성된 데이터셋 검수 페이지
+  - 검수 및 DB 업데이트 기능
+  - updateDataset 컴포넌트 호출
+
+  updateDataset.tsx
+    - 데이터 셋 수정 컴포넌트
+    - 데이터 셋 및 프롬프트 수정 및 DB 업데이트 기능
+
+newModel.tsx : '/newModel'
+  - 모델 생성 페이지
+  - training 컴포넌트 호출
+
+  training.tsx
+    - 모델 생성 컴포넌트
+    - 데이터셋 불러와서 모델 생성 및 DB 저장 기능
+    
+testModel.tsx : '/testModel'
+  - 모델 테스트 페이지
+    - 테스트 방법에 대해 좀 더 논의 필요
+    - 실제 튜터 사이트에 들어갈 형태의 강의 페이지를 구성하는 것이 맞나?
+  - test 컴포넌트 호출
+
+  test.tsx
+    - 모델 테스트 컴포넌트
+    - 모델 테스트 및 DB 저장 기능
