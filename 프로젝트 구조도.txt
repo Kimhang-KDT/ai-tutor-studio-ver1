@@ -1,4 +1,5 @@
-리액트 타입스크립트
+client : 리액트 타입스크립트
+server : FastAPI
 
 src/
   components/
@@ -19,7 +20,7 @@ src/
   utils/
     utils.ts
   styles/
-    lyaout.css
+    layout.css
     home.css
     upload.css
     training.css
@@ -28,8 +29,6 @@ src/
   routes/
     DataRouter.tsx
     ModelRouter.tsx
-  database/
-    database.ts  
   App.tsx
   index.tsx
 
@@ -50,7 +49,7 @@ src/
 - 실 배포 버튼 : 여러 버전의 모델 중 각 레벨 별 베이스 모델은 1개씩 선택 가능
     - 대시보드에서 선택 및 저장 시 해당 모델이 각 레벨 별 default 모델이 됨.
 
-homePage.tsx : '/'
+homePage.tsx : Get '/'
   - 웹 애플리케이션 실행시 처음 보이는 페이지
   - home 컴포넌트 호출
 
@@ -58,7 +57,7 @@ homePage.tsx : '/'
     - 대시보드 페이지에 사용할 컴포넌트
     - 현재 보유한 모델, 데이터, 프롬프트 목록 및 진행상황 표시
 
-addData.tsx : '/addData'
+addData.tsx : Get Post '/addData'
   - 데이터 업로드 페이지
   - upload, createDataset 컴포넌트 호출
   - 업로드 및 데이터셋 생성 후 화면에 생성된 데이터셋 출력
@@ -72,7 +71,7 @@ addData.tsx : '/addData'
     - 데이터 셋 생성 컴포넌트
     - 데이터 셋 및 프롬프트 생성 및 DB 저장 기능
   
-checkData.tsx : '/checkData'
+checkData.tsx : Get Post'/checkData'
   - 업로드X 생성된 데이터셋 검수 페이지
   - 검수 및 DB 업데이트 기능
   - updateDataset 컴포넌트 호출
@@ -81,15 +80,15 @@ checkData.tsx : '/checkData'
     - 데이터 셋 수정 컴포넌트
     - 데이터 셋 및 프롬프트 수정 및 DB 업데이트 기능
 
-newModel.tsx : '/newModel'
+newModel.tsx : Get Post '/newModel'
   - 모델 생성 페이지
-  - training 컴포넌트 호출
+  - 저장할 모델 이름 입력 후 생성 버튼 클릭 시 training 컴포넌트 호출
 
   training.tsx
     - 모델 생성 컴포넌트
     - 데이터셋 불러와서 모델 생성 및 DB 저장 기능
     
-testModel.tsx : '/testModel'
+testModel.tsx : Get Post '/testModel'
   - 모델 테스트 페이지
     - 테스트 방법에 대해 좀 더 논의 필요
     - 실제 튜터 사이트에 들어갈 형태의 강의 페이지를 구성하는 것이 맞나?
@@ -98,3 +97,11 @@ testModel.tsx : '/testModel'
   test.tsx
     - 모델 테스트 컴포넌트
     - 모델 테스트 및 DB 저장 기능
+
+database/
+  database
+
+config
+  - db name : tutor_db
+  - db url : 로컬
+  - 컬렉션 : models, datas, dataSet
