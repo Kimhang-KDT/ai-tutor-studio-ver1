@@ -1,11 +1,18 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Button } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 interface CreateDatasetProps {
   filePaths: string[];
 }
 
 const CreateDataset: React.FC<CreateDatasetProps> = ({ filePaths }) => {
+  const navigate = useNavigate();
+
+  const handleNextStep = () => {
+    navigate('/data/check');
+  };
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -19,6 +26,9 @@ const CreateDataset: React.FC<CreateDatasetProps> = ({ filePaths }) => {
           <li key={index}>{path}</li>
         ))}
       </ul>
+      <Button variant="contained" color="primary" onClick={handleNextStep} sx={{ mt: 2 }}>
+        다음 단계로
+      </Button>
     </Box>
   );
 };

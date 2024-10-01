@@ -132,7 +132,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {[
             { text: '홈', icon: <HomeIcon />, path: '/' },
             { text: '데이터 추가', icon: <AddIcon />, path: '/data/add' },
-            { text: '데이터 검수', icon: <CheckIcon />, path: '/data/check' },
+            { text: '데이터 검수', icon: <CheckIcon />, path: '/data/lists' },
             { text: '새 모델 생성', icon: <ModelTrainingIcon />, path: '/model/new' },
             { text: '모델 테스트', icon: <BugReportIcon />, path: '/model/test' },
           ].map((item) => (
