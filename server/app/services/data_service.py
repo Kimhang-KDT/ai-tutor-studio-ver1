@@ -19,3 +19,8 @@ async def save_data(files: List[UploadFile]) -> List[str]:
             raise
     
     return file_paths
+
+async def save_dataset():
+    pass
+
+    return "dataset saved"

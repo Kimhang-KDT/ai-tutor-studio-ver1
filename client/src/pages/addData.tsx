@@ -54,9 +54,6 @@ const AddData: React.FC = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          데이터 추가
-        </Typography>
         <Upload onFilesSelected={handleFilesSelected} />
       </Box>
       {selectedFiles.length > 0 && !isDatasetCreated && (

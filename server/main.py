@@ -35,7 +35,13 @@ app.add_middleware(
 async def root():
     return {"message": "AI Tutor Studio API"}
 
+# 데이터 업로드 및 데이터셋 생성
 @app.post("/data/create-dataset")
 async def create_dataset(files: List[UploadFile] = File(...)):
     file_paths = await save_data(files)
     return {"filePaths": file_paths}
+
+# 데이터셋 저장
+@app.post("/data/save-dataset")
+async def save_dataset():
+    return {"message": "AI Tutor Studio API"}
