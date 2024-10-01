@@ -6,12 +6,16 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-export const someApiCall = async () => {
+export const createDataset = async (formData: FormData) => {
   try {
-    const response = await api.get('/some-endpoint');
+    const response = await api.post('/data/create-dataset', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   } catch (error) {
-    console.error('API 호출 중 오류 발생:', error);
+    console.error('데이터셋 생성 중 오류 발생:', error);
     throw error;
   }
 };
