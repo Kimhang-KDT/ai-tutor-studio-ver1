@@ -39,8 +39,14 @@ async def root():
 # 데이터 업로드 및 데이터셋 생성
 @app.post("/data/create-dataset")
 async def create_dataset(file: UploadFile = File(...)):
-    dataset = await translate_data(file)
-    return {"dataset": dataset}
+    try:
+        dataset = await translate_data(file)
+        if "error" in dataset:
+            return {"error": dataset["error"]}
+        return {"dataset": dataset}
+    except Exception as e:
+        print(f"데이터셋 생성 중 오류 발생: {str(e)}")
+        return {"error": f"데이터셋 생성 중 오류 발생: {str(e)}"}
 
 # 데이터셋 저장
 @app.post("/data/save-dataset")

@@ -111,7 +111,11 @@ async def translate_data(file: UploadFile):
             print("원본 응답:", result)
             return {"error": "JSON 데이터를 추출할 수 없습니다."}
 
-        return json_data
+        # JSON 데이터를 섹션별로 구조화
+        structured_data = structure_json_data(json_data)
+
+        print("구조화된 JSON 데이터:", json.dumps(structured_data, ensure_ascii=False, indent=2))
+        return structured_data
 
     except Exception as e:
         print(f"OpenAI API 호출 중 오류 발생: {str(e)}")
@@ -139,3 +143,28 @@ def extract_json_from_text(text):
                     start += 1
 
     return json_objects if json_objects else None
+
+def structure_json_data(json_objects):
+    structured_data = {
+        "instructor_profile": None,
+        "learning_content": None,
+        "example_sentences": []
+    }
+
+    for obj in json_objects:
+        if isinstance(obj, dict):
+            if "role" in obj:
+                structured_data["instructor_profile"] = obj
+            elif "categories" in obj:
+                # 질문 부분 처리
+                if "question" in obj and isinstance(obj["question"], list):
+                    obj["question"] = [
+                        {"q": item["q"], "a": item["a"]} 
+                        for item in obj["question"] 
+                        if isinstance(item, dict) and "q" in item and "a" in item
+                    ]
+                structured_data["learning_content"] = obj
+            elif "input" in obj and "output" in obj:
+                structured_data["example_sentences"].append(obj)
+
+    return structured_data
