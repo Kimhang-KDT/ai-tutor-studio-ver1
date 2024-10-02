@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.db.database import init_db
-from app.services.data_service import save_data
+from app.services.data_service import save_data, get_data_lists_from_db
+from app.services.llm_service import translate_data
 from typing import List
 import os
 
@@ -35,17 +36,22 @@ app.add_middleware(
 async def root():
     return {"message": "AI Tutor Studio API"}
 
-@app.get("/datasets")
-async def datasets():
-    return {"message": "AI Tutor Studio API"}
-
 # 데이터 업로드 및 데이터셋 생성
 @app.post("/data/create-dataset")
-async def create_dataset(files: List[UploadFile] = File(...)):
-    file_paths = await save_data(files)
-    return {"filePaths": file_paths}
+async def create_dataset(file: UploadFile = File(...)):
+    dataset = await translate_data(file)
+    return {"dataset": dataset}
 
 # 데이터셋 저장
 @app.post("/data/save-dataset")
 async def save_dataset():
+    # 데이터셋으로 변환 후 검수 과정을 거쳐 save_sataset()을 클라이언트에서 호출
+    return {"message": "AI Tutor Studio API"}
+
+# 저장한 데이터셋 목록 조회
+@app.get("/lists")
+async def data_lists():
+    # 데이터베이스에서 저장된 데이터셋을 불러와 클라이언트로 반환
+    data_lists = await get_data_lists_from_db()
+
     return {"message": "AI Tutor Studio API"}

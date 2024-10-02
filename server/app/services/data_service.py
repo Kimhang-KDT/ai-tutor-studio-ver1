@@ -20,7 +20,19 @@ async def save_data(files: List[UploadFile]) -> List[str]:
     
     return file_paths
 
-async def save_dataset():
+async def save_dataset_to_db():
     pass
 
     return "dataset saved"
+
+async def get_data_lists_from_db():
+    pass
+
+    return "dataset saved"
+
+async def get_dataset_from_db():
+    pass
+
+    return "dataset saved"
+
+

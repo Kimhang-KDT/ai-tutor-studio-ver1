@@ -6,28 +6,26 @@ import { createDataset } from '../services/api';
 import axios from 'axios';
 
 const AddData: React.FC = () => {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploadedFilePaths, setUploadedFilePaths] = useState<string[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [dataset, setDataset] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDatasetCreated, setIsDatasetCreated] = useState(false);
 
-  const handleFilesSelected = (files: File[]) => {
-    setSelectedFiles(files);
+  const handleFileSelected = (files: File[]) => {
+    setSelectedFile(files[0]);
     setIsDatasetCreated(false);
   };
 
   const handleCreateDataset = async () => {
-    if (selectedFiles.length === 0) return;
+    if (!selectedFile) return;
 
     setIsUploading(true);
     const formData = new FormData();
-    selectedFiles.forEach((file) => {
-      formData.append('files', file);
-    });
+    formData.append('file', selectedFile);
 
     try {
       const response = await createDataset(formData);
-      setUploadedFilePaths(response.filePaths);
+      setDataset(response.dataset);
       setIsDatasetCreated(true);
     } catch (error) {
       console.error('데이터셋 생성 중 오류 발생:', error);
@@ -54,9 +52,9 @@ const AddData: React.FC = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 4 }}>
-        <Upload onFilesSelected={handleFilesSelected} />
+        <Upload onFilesSelected={handleFileSelected} />
       </Box>
-      {selectedFiles.length > 0 && !isDatasetCreated && (
+      {selectedFile && !isDatasetCreated && (
         <Box sx={{ mt: 2 }}>
           <Button
             variant="contained"
@@ -68,9 +66,9 @@ const AddData: React.FC = () => {
           </Button>
         </Box>
       )}
-      {isDatasetCreated && (
+      {isDatasetCreated && dataset && (
         <Box sx={{ mt: 6 }}>
-          <CreateDataset filePaths={uploadedFilePaths} />
+          <CreateDataset dataset={dataset} />
         </Box>
       )}
     </Container>
