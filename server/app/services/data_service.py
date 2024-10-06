@@ -1,7 +1,9 @@
 import os
 from fastapi import UploadFile
-from typing import List
+from typing import List, Dict
 from app.core.config import settings
+import json
+from app.db.database import db
 
 async def save_data(files: List[UploadFile]) -> List[str]:
     file_paths = []
@@ -20,10 +22,16 @@ async def save_data(files: List[UploadFile]) -> List[str]:
     
     return file_paths
 
-async def save_dataset_to_db():
-    pass
-
-    return "dataset saved"
+async def save_dataset_to_db(dataset: Dict):
+    try:
+        result = await db.dataSets.insert_one(dataset)
+        if result.inserted_id:
+            return "dataset saved"
+        else:
+            raise Exception("데이터셋 저장 실패")
+    except Exception as e:
+        print(f"데이터셋 저장 중 오류 발생: {str(e)}")
+        raise
 
 async def get_data_lists_from_db():
     pass

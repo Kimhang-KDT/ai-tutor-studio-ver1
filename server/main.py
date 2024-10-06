@@ -1,11 +1,11 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.db.database import init_db
-from app.services.data_service import save_data, get_data_lists_from_db
-from app.services.llm_service import translate_data
-from typing import List
+from app.services.data_service import save_data, get_data_lists_from_db, save_dataset_to_db
+from app.services.llm_service import translate_data  # structure_json_data 제거
+from typing import List, Dict
 import os
 
 @asynccontextmanager
@@ -50,9 +50,17 @@ async def create_dataset(file: UploadFile = File(...)):
 
 # 데이터셋 저장
 @app.post("/data/save-dataset")
-async def save_dataset():
-    # 데이터셋으로 변환 후 검수 과정을 거쳐 save_sataset()을 클라이언트에서 호출
-    return {"message": "AI Tutor Studio API"}
+async def save_dataset(dataset: Dict):
+    try:
+        # 데이터베이스에 저장
+        result = await save_dataset_to_db(dataset)
+        
+        if result == "dataset saved":
+            return {"success": True, "message": "데이터셋이 성공적으로 저장되었습니다."}
+        else:
+            raise HTTPException(status_code=500, detail="데이터셋 저장 실패")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"데이터셋 저장 중 오류 발생: {str(e)}")
 
 # 저장한 데이터셋 목록 조회
 @app.get("/lists")

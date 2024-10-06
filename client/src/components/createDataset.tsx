@@ -1,10 +1,29 @@
 import React, { useState } from 'react';
 import { Box, Typography, Button, Paper, TextField, Grid } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { saveDataset } from '../services/api';  // api.ts에서 saveDataset 함수 import
 
 interface Dataset {
-  instructor_profile: Record<string, string>;
-  learning_content: Record<string, string | string[]>;
+  instructor_profile: {
+    role: string;
+    style: string;
+    tone: string;
+    introduction: string;
+    target_audience: string[];
+    teaching_method: string[];
+    key_points: string[];
+  };
+  learning_content: {
+    categories: string[];
+    summary: string;
+    level: string;
+    explanation: string[];
+    question: Array<{ q: string; a: string }>;
+    reference: string[];
+    important_words: Array<{ word: string; explanation: string }>;
+    important_sentences: Array<{ sentence: string; explanation: string }>;
+    important_phrases: Array<{ phrase: string; explanation: string }>;
+  };
   example_sentences: Array<{ input: string; output: string }>;
 }
 
@@ -35,8 +54,17 @@ const CreateDataset: React.FC<CreateDatasetProps> = ({ dataset }) => {
   const navigate = useNavigate();
   const [editedDataset, setEditedDataset] = useState<Dataset>(dataset);
 
-  const handleNextStep = () => {
-    navigate('/data/check');
+  const handleNextStep = async () => {
+    try {
+      const response = await saveDataset(editedDataset);
+      if (response.success) {
+        navigate('/data/check');
+      } else {
+        console.error('데이터 저장 실패:', response.error);
+      }
+    } catch (error) {
+      console.error('데이터 전송 중 오류 발생:', error);
+    }
   };
 
   const handleChange = (section: keyof Dataset, key: string, value: any) => {
@@ -49,7 +77,7 @@ const CreateDataset: React.FC<CreateDatasetProps> = ({ dataset }) => {
     }));
   };
 
-  const renderComplexField = (section: keyof Dataset, key: string, value: any) => {
+  const renderField = (section: keyof Dataset, key: string, value: any) => {
     if (Array.isArray(value)) {
       if (key === 'question') {
         return (
@@ -82,27 +110,90 @@ const CreateDataset: React.FC<CreateDatasetProps> = ({ dataset }) => {
             ))}
           </Box>
         );
+      } else if (['important_words', 'important_sentences', 'important_phrases'].includes(key)) {
+        const labelKey = key === 'important_words' ? 'word' : 
+                         key === 'important_sentences' ? 'sentence' : 'phrase';
+        return (
+          <Box key={key} sx={{ mb: 2 }}>
+            <Typography variant="subtitle1">{labelTranslations[key] || key}</Typography>
+            {value.map((item: { [key: string]: string }, index: number) => (
+              <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: '4px' }}>
+                <TextField
+                  fullWidth
+                  label={labelKey}
+                  value={item[labelKey]}
+                  onChange={(e) => {
+                    const newValue = [...value];
+                    newValue[index] = { ...newValue[index], [labelKey]: e.target.value };
+                    handleChange(section, key, newValue);
+                  }}
+                  sx={{ mb: 1 }}
+                />
+                <TextField
+                  fullWidth
+                  label="설명"
+                  value={item.explanation}
+                  onChange={(e) => {
+                    const newValue = [...value];
+                    newValue[index] = { ...newValue[index], explanation: e.target.value };
+                    handleChange(section, key, newValue);
+                  }}
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            ))}
+          </Box>
+        );
+      } else if (key === 'example_sentences') {
+        return (
+          <Box key={key} sx={{ mb: 2 }}>
+            {value.map((item: { input: string; output: string }, index: number) => (
+              <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: '4px' }}>
+                <TextField
+                  fullWidth
+                  label="질문"
+                  value={item.input}
+                  onChange={(e) => {
+                    const newValue = [...value];
+                    newValue[index] = { ...newValue[index], input: e.target.value };
+                    handleChange(section, key, newValue);
+                  }}
+                  sx={{ mb: 1 }}
+                />
+                <TextField
+                  fullWidth
+                  label="답변"
+                  value={item.output}
+                  onChange={(e) => {
+                    const newValue = [...value];
+                    newValue[index] = { ...newValue[index], output: e.target.value };
+                    handleChange(section, key, newValue);
+                  }}
+                />
+              </Box>
+            ))}
+          </Box>
+        );
+      } else {
+        return (
+          <Box key={key} sx={{ mb: 2 }}>
+            <Typography variant="subtitle1">{labelTranslations[key] || key}</Typography>
+            {value.map((item: string, index: number) => (
+              <TextField
+                key={index}
+                fullWidth
+                value={item}
+                onChange={(e) => {
+                  const newValue = [...value];
+                  newValue[index] = e.target.value;
+                  handleChange(section, key, newValue);
+                }}
+                sx={{ mb: 1 }}
+              />
+            ))}
+          </Box>
+        );
       }
-      // ... 기존의 배열 처리 코드
-    } else if (typeof value === 'object') {
-      return (
-        <Box key={key} sx={{ mb: 2 }}>
-          <Typography variant="subtitle1">{labelTranslations[key] || key}</Typography>
-          {Object.entries(value).map(([subKey, subValue]) => (
-            <TextField
-              key={subKey}
-              fullWidth
-              label={subKey}
-              value={subValue as string}
-              onChange={(e) => {
-                const newValue = { ...value, [subKey]: e.target.value };
-                handleChange(section, key, newValue);
-              }}
-              sx={{ mb: 1 }}
-            />
-          ))}
-        </Box>
-      );
     } else {
       return (
         <TextField
@@ -118,27 +209,16 @@ const CreateDataset: React.FC<CreateDatasetProps> = ({ dataset }) => {
     }
   };
 
-  // 데이터 유효성 검사 함수 추가
-  const isValidSection = (section: any): section is Record<string, any> => {
-    return section !== null && typeof section === 'object';
-  };
-
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        데이터셋 생성 및 편집
-      </Typography>
-      
       <Grid container spacing={4}>
         {/* 강사 프로필 섹션 */}
         <Grid item xs={12}>
           <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
             <Typography variant="h5" gutterBottom>강사 프로필</Typography>
-            {isValidSection(editedDataset.instructor_profile) && 
-              Object.entries(editedDataset.instructor_profile).map(([key, value]) => 
-                renderComplexField('instructor_profile', key, value)
-              )
-            }
+            {Object.entries(editedDataset.instructor_profile).map(([key, value]) => 
+              renderField('instructor_profile', key, value)
+            )}
           </Paper>
         </Grid>
 
@@ -146,11 +226,9 @@ const CreateDataset: React.FC<CreateDatasetProps> = ({ dataset }) => {
         <Grid item xs={12}>
           <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
             <Typography variant="h5" gutterBottom>학습 내용</Typography>
-            {isValidSection(editedDataset.learning_content) && 
-              Object.entries(editedDataset.learning_content).map(([key, value]) => 
-                renderComplexField('learning_content', key, value)
-              )
-            }
+            {Object.entries(editedDataset.learning_content).map(([key, value]) => 
+              renderField('learning_content', key, value)
+            )}
           </Paper>
         </Grid>
 
@@ -158,31 +236,7 @@ const CreateDataset: React.FC<CreateDatasetProps> = ({ dataset }) => {
         <Grid item xs={12}>
           <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
             <Typography variant="h5" gutterBottom>예시 문장</Typography>
-            {Array.isArray(editedDataset.example_sentences) && editedDataset.example_sentences.map((sentence: any, index: number) => (
-              <Box key={index} sx={{ mb: 2 }}>
-                <TextField
-                  fullWidth
-                  label="입력"
-                  value={sentence.input || ''}
-                  onChange={(e) => {
-                    const newSentences = [...editedDataset.example_sentences];
-                    newSentences[index] = { ...newSentences[index], input: e.target.value };
-                    setEditedDataset(prev => ({ ...prev, example_sentences: newSentences }));
-                  }}
-                  sx={{ mb: 1 }}
-                />
-                <TextField
-                  fullWidth
-                  label="출력"
-                  value={sentence.output || ''}
-                  onChange={(e) => {
-                    const newSentences = [...editedDataset.example_sentences];
-                    newSentences[index] = { ...newSentences[index], output: e.target.value };
-                    setEditedDataset(prev => ({ ...prev, example_sentences: newSentences }));
-                  }}
-                />
-              </Box>
-            ))}
+            {renderField('example_sentences', 'example_sentences', editedDataset.example_sentences)}
           </Paper>
         </Grid>
       </Grid>

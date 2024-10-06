@@ -17,6 +17,7 @@ categorize_system_prompt = """
 데이터의 형식은 json object로 출력하고 아래의 형태로 출력
 ```
 {
+  "instructor_profile": {
     "role": string,
     "style": string,
     "tone": string,
@@ -24,6 +25,7 @@ categorize_system_prompt = """
     "target_audience": string[],
     "teaching_method": string[],
     "key_points": string[],
+  }
 }
 ```
 
@@ -36,8 +38,6 @@ target_audience에는 강사가 진행할 수업내용이 도움이 될 대상�
 teaching_method에는 강사가 진행할 수업내용의 교육 방법을 입력.
 key_points에는 강의내용의 중점적으로 가르쳐야될 포인트들을 구체적으로 3가지를 뽑아줘
 
-
-
 2. 입력된 데이터를 기반으로 학습용 데이터 셋을 만드는 역할.
     - 입력된 데이터를 학습용 데이터로 바꾸는 역할을 하는 LLM
     - 주제 소주제 내용과 같은 구성으로 정리 json 형식만듬.
@@ -47,17 +47,21 @@ key_points에는 강의내용의 중점적으로 가르쳐야될 포인트들을
         - 강사가 강조하는 부분을 강조해 줘.
 
 데이터의 형식은 json object로 출력하고 아래의 형태로 출력
+```
 {
+  "learning_content": {
     "categories": string[],
     "summary": string,
     "level": string,
     "explanation": string[],
     "question": string{"q": string, "a": string}[],    
     "reference": string[],
-    "important_words": string{중요 단어: 이유}[],
-    "important_sentences": string{중요 문장: 이유}[],
-    "important_phrases": string{중요 구문: 이유}[],
+    "important_words": string{"word":중요 단어, "explanation": 이유}[],
+    "important_sentences": string{"sentence":중요 문장, "explanation": 이유}[],
+    "important_phrases": string{"phrase":중요 구문, "explanation": 이유}[],
+  }
 }
+```
 
 Categories는 데이터 셋의 테마를 입력 해줘. 내용에서 가장 중요한 부분에 대해서 3개의 카테고리로 입력. ex)명사, 대명사, 동사, 형용사, 부사, 전치사, 접속사, 어미, 어간, 접미사, 문장, 문단, 문장 구조, 문장 형식, 문장 형태, 문장 형태소, 문장 형태소 구조, 문장 형태소 구조 등등.
 summary는 한국어로 주요 내용을 입력.
@@ -77,6 +81,17 @@ important_phrases는 영문법 중요 구문을 입력.
         - 강사가 강조하는 부분을 학습하게 작성.
         - 데이터를 기반으로 강사의 노하우를 최대한 반영.
     - important_sentences와 important_phrases, important_sentences_with_english, important_phrases_with_english마다 하나씩 난이도 별로 각각 1개씩 총 12개를 작성해줘라.
+    - 데이터의 형식은 json object로 출력하고 아래의 형태로 출력
+```
+{
+  "example_sentences": [
+    {
+      "input": string,
+      "output": string,
+    }
+  ]
+}
+```
 """
 
 async def translate_data(file: UploadFile):
@@ -111,7 +126,7 @@ async def translate_data(file: UploadFile):
             print("원본 응답:", result)
             return {"error": "JSON 데이터를 추출할 수 없습니다."}
 
-        # JSON 데이터를 섹션별로 구조화
+        # JSON 데이터를 구조화
         structured_data = structure_json_data(json_data)
 
         print("구조화된 JSON 데이터:", json.dumps(structured_data, ensure_ascii=False, indent=2))
@@ -122,49 +137,43 @@ async def translate_data(file: UploadFile):
         return {"error": str(e)}
 
 def extract_json_from_text(text):
-    # 텍스트에서 JSON 데이터 추출
     json_objects = []
-    start = 0
-    while True:
-        try:
-            obj = json.loads(text[start:])
-            json_objects.append(obj)
+    json_start = text.find('```json')
+    while json_start != -1:
+        json_end = text.find('```', json_start + 7)
+        if json_end == -1:
             break
-        except json.JSONDecodeError as e:
-            if e.pos == 0:
-                start += 1
-                if start >= len(text):
-                    break
-            else:
-                try:
-                    json_objects.append(json.loads(text[start:start+e.pos]))
-                    start += e.pos
-                except:
-                    start += 1
+        json_str = text[json_start + 7:json_end].strip()
+        try:
+            json_obj = json.loads(json_str)
+            json_objects.append(json_obj)
+        except json.JSONDecodeError:
+            print(f"JSON 파싱 오류: {json_str}")
+        json_start = text.find('```json', json_end)
 
-    return json_objects if json_objects else None
+    if not json_objects:
+        return None
 
-def structure_json_data(json_objects):
+    # 모든 JSON 객체를 하나의 딕셔너리로 병합
+    result = {}
+    for obj in json_objects:
+        result.update(obj)
+
+    return result
+
+def structure_json_data(data):
     structured_data = {
-        "instructor_profile": None,
-        "learning_content": None,
+        "instructor_profile": {},
+        "learning_content": {},
         "example_sentences": []
     }
 
-    for obj in json_objects:
-        if isinstance(obj, dict):
-            if "role" in obj:
-                structured_data["instructor_profile"] = obj
-            elif "categories" in obj:
-                # 질문 부분 처리
-                if "question" in obj and isinstance(obj["question"], list):
-                    obj["question"] = [
-                        {"q": item["q"], "a": item["a"]} 
-                        for item in obj["question"] 
-                        if isinstance(item, dict) and "q" in item and "a" in item
-                    ]
-                structured_data["learning_content"] = obj
-            elif "input" in obj and "output" in obj:
-                structured_data["example_sentences"].append(obj)
+    for key, value in data.items():
+        if key == "instructor_profile":
+            structured_data["instructor_profile"] = value
+        elif key == "learning_content":
+            structured_data["learning_content"] = value
+        elif key == "example_sentences":
+            structured_data["example_sentences"] = value
 
     return structured_data

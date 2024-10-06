@@ -40,3 +40,13 @@ export const getDatasets = async () => {
 //    throw error;
 //  }
 //};
+
+export const saveDataset = async (dataset: any) => {
+  try {
+    const response = await api.post('/data/save-dataset', dataset);
+    return response.data;
+  } catch (error) {
+    console.error('데이터셋 저장 중 오류 발생:', error);
+    throw error;
+  }
+};
