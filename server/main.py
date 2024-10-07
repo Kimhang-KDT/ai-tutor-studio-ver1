@@ -1,10 +1,10 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.config import settings
-from app.db.database import init_db, JSONEncoder
+from app.db.database import init_db, JSONEncoder, get_collection
 from app.services.data_service import save_data, get_data_lists_from_db, save_dataset_to_db, get_dataset_from_db, update_dataset_in_db
-from app.services.llm_service import translate_data
+from app.services.llm_service import translate_data, create_new_model, check_fine_tuning_status, update_model_status, use_fine_tuned_model
 from typing import List, Dict
 import os
 import json
@@ -88,4 +88,47 @@ async def update_dataset_route(dataset_id: str, dataset: Dict):
             raise HTTPException(status_code=404, detail="데이터셋을 찾을 수 없습니다.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"데이터셋 업데이트 중 오류 발생: {str(e)}")
+
+@app.post("/model/newModel")
+async def create_new_model_route(dataset_id: str = Body(..., embed=True)):
+    dataset = await get_dataset_from_db(dataset_id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="데이터셋을 찾을 수 없습니다.")
+    
+    new_model = await create_new_model(dataset)
+    return {"model_id": new_model["model_id"], "status": new_model["status"]}
+
+@app.get("/model/status/{model_id}")
+async def get_model_status(model_id: int):
+    models_collection = await get_collection("models")
+    model = await models_collection.find_one({"model_id": model_id})
+    if not model:
+        raise HTTPException(status_code=404, detail="모델을 찾을 수 없습니다.")
+    
+    current_status = await check_fine_tuning_status(model["fine_tuning_id"])
+    if current_status != model["status"]:
+        await update_model_status(model_id, current_status)
+    
+    return {"status": current_status}
+
+@app.get("/model/status-by-dataset/{dataset_id}")
+async def get_model_status_by_dataset(dataset_id: str):
+    models_collection = await get_collection("models")
+    model = await models_collection.find_one({"dataset_id": dataset_id})
+    if not model:
+        return {"status": "미생성"}
+    
+    # OpenAI API를 통해 최신 상태 확인 및 DB 업데이트
+    current_status = await update_model_status(model["fine_tuning_id"])
+    return {"status": current_status}
+
+@app.post("/model/use/{dataset_id}")
+async def use_model(dataset_id: str, prompt: str = Body(...)):
+    try:
+        response = await use_fine_tuned_model(dataset_id, prompt)
+        return {"response": response}
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 

@@ -59,3 +59,44 @@ export const updateDataset = async (id: string, dataset: any) => {
     throw error;
   }
 };
+
+// 새로운 모델 생성 : 데이터셋 id 전달
+export const createNewModel = async (datasetId: string) => {
+  try {
+    const response = await api.post('/model/newModel', { dataset_id: datasetId });
+    return response.data;
+  } catch (error) {
+    console.error('새로운 모델 생성 중 오류 발생:', error);
+    throw error;
+  }
+};
+
+export const getModelStatus = async (modelId: number) => {
+  try {
+    const response = await api.get(`/model/status/${modelId}`);
+    return response.data;
+  } catch (error) {
+    console.error('모델 상태 확인 중 오류 발생:', error);
+    throw error;
+  }
+};
+
+export const getModelStatusByDatasetId = async (datasetId: string) => {
+  try {
+    const response = await api.get(`/model/status-by-dataset/${datasetId}`);
+    return response.data;
+  } catch (error) {
+    console.error('모델 상태 확인 중 오류 발생:', error);
+    throw error;
+  }
+};
+
+export const useFineTunedModel = async (datasetId: string, prompt: string) => {
+  try {
+    const response = await api.post(`/model/use/${datasetId}`, { prompt });
+    return response.data.response;
+  } catch (error) {
+    console.error('파인튜닝된 모델 사용 중 오류 발생:', error);
+    throw error;
+  }
+};

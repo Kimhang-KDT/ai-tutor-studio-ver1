@@ -2,6 +2,11 @@ from app.core.config import settings
 import openai
 import json
 from fastapi import UploadFile
+from app.utils.utils import convert_dataset_to_finetuning
+from app.db.database import get_collection
+from bson import ObjectId
+import io
+from datetime import datetime
 
 categorize_system_prompt = """
 너의 역할은 교육용 데이터를 바탕으로 그 데이터에 맞게끔 LLM에게 교육 목차를 분류해주는 데이터 셋을 제공하고, 강사의 스타일에 맞는 파인튜닝 데이터셋을 제공하는 것이다.
@@ -177,3 +182,135 @@ def structure_json_data(data):
             structured_data["example_sentences"] = value
 
     return structured_data
+
+# openai 파인튜닝 모델 생성
+# 데이터베이스에서 id로 데이터셋 가져와서 파인튜닝 모델 생성
+async def create_new_model(dataset):
+    openai.api_key = settings.LLM_API_KEY
+
+    # 데이터셋을 파인튜닝용 데이터셋으로 변환
+    finetuning_data = convert_dataset_to_finetuning(dataset)
+    
+    print("Finetuning data:", finetuning_data)  # 로깅 추가
+    
+    file_obj = io.StringIO(finetuning_data)
+
+    try:
+        response = openai.File.create(
+            file=file_obj,
+            purpose='fine-tune',
+            user_provided_filename='training_data.jsonl'
+        )
+        file_id = response.id
+        print("File uploaded successfully. File ID:", file_id)  # 로깅 추가
+    except Exception as e:
+        print(f"파일 업로드 중 오류 발생: {str(e)}")
+        raise
+
+    # 파인튜닝 작업 시작
+    try:
+        response = openai.FineTuningJob.create(
+            training_file=file_id,
+            model="gpt-3.5-turbo"
+        )
+        
+        # DB에 모델 정보 저장 또는 업데이트
+        models_collection = await get_collection("models")
+        existing_model = await models_collection.find_one({"dataset_id": str(dataset["_id"])})
+        
+        current_time = datetime.utcnow()
+        
+        if existing_model:
+            await models_collection.update_one(
+                {"dataset_id": str(dataset["_id"])},
+                {"$set": {
+                    "fine_tuning_id": response.id,
+                    "status": "진행중",
+                    "updated_at": current_time
+                }}
+            )
+            model_id = existing_model["_id"]
+        else:
+            new_model = {
+                "dataset_id": str(dataset["_id"]),
+                "fine_tuning_id": response.id,
+                "status": "진행중",
+                "created_at": current_time,
+                "updated_at": current_time
+            }
+            result = await models_collection.insert_one(new_model)
+            model_id = result.inserted_id
+
+        return {
+            "model_id": str(model_id), 
+            "fine_tuning_id": response.id, 
+            "status": "진행중",
+            "created_at": current_time.isoformat()
+        }
+    except Exception as e:
+        print(f"파인튜닝 시작 중 오류 발생: {str(e)}")
+        raise
+
+async def check_fine_tuning_status(fine_tuning_id):
+    openai.api_key = settings.LLM_API_KEY
+    try:
+        response = openai.FineTuningJob.retrieve(fine_tuning_id)
+        return response.status
+    except Exception as e:
+        print(f"파인튜닝 상태 확인 중 오류 발생: {str(e)}")
+        raise
+
+async def check_model_status(model_id):
+    models_collection = await get_collection("models")
+    model = await models_collection.find_one({"_id": ObjectId(model_id)})
+    if not model:
+        return None
+    return await check_fine_tuning_status(model["fine_tuning_id"])
+
+async def update_model_status(fine_tuning_id):
+    models_collection = await get_collection("models")
+    try:
+        status = await check_fine_tuning_status(fine_tuning_id)
+        if status == 'succeeded':
+            status = '완료'
+        elif status == 'failed':
+            status = '실패'
+        elif status == 'running':
+            status = '진행중'
+    except Exception as e:
+        print(f"파인튜닝 상태 확인 중 오류 발생: {str(e)}")
+        status = "실패"
+    
+    print(f"Updating status for fine_tuning_id {fine_tuning_id}: {status}")  # 디버깅용 로그
+    
+    current_time = datetime.utcnow()
+    await models_collection.update_one(
+        {"fine_tuning_id": fine_tuning_id},
+        {"$set": {"status": status, "updated_at": current_time}}
+    )
+    
+    return status
+
+async def use_fine_tuned_model(dataset_id: str, prompt: str):
+    models_collection = await get_collection("models")
+    model = await models_collection.find_one({"dataset_id": dataset_id})
+    
+    if not model or 'fine_tuning_id' not in model:
+        raise ValueError("파인튜닝된 모델을 찾을 수 없습니다.")
+
+    fine_tuning_id = model['fine_tuning_id']
+    
+    openai.api_key = settings.LLM_API_KEY
+    
+    try:
+        response = openai.ChatCompletion.create(
+            model=fine_tuning_id,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message['content']
+    except Exception as e:
+        print(f"파인튜닝된 모델 사용 중 오류 발생: {str(e)}")
+        raise
