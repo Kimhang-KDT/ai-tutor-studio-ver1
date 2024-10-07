@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.db.database import init_db, JSONEncoder, get_collection
-from app.services.data_service import save_data, get_data_lists_from_db, save_dataset_to_db, get_dataset_from_db, update_dataset_in_db
+from app.services.data_service import get_data_lists_from_db, save_dataset_to_db, get_dataset_from_db, update_dataset_in_db
 from app.services.llm_service import translate_data, create_new_model, check_fine_tuning_status, update_model_status, use_fine_tuned_model
 from typing import List, Dict
 import os
@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
         print("데이터베이스 초기화 성공")
     except Exception as e:
         print(f"데이터베이스 초기화 실패: {str(e)}")
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    # UPLOAD_DIR 관련 코드를 제거했습니다.
     yield
 
 app = FastAPI(lifespan=lifespan)
