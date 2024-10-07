@@ -1,15 +1,12 @@
 import React from 'react';
-import { Container, Typography } from '@mui/material';
 import DatasetList from '../components/datasetList';
 
 const ListPage: React.FC = () => {
   return (
-    <Container maxWidth="lg">
-      <Typography variant="h4" component="h1" gutterBottom>
-        데이터셋 검수
-      </Typography>
+    <div>
+      <h1>데이터셋 목록</h1>
       <DatasetList />
-    </Container>
+    </div>
   );
 };
 

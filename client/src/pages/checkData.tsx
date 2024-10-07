@@ -1,15 +1,18 @@
 import React from 'react';
-import { Container, Typography } from '@mui/material';
-import UpdateDataset from '../components/updateDataset';
+import { useParams } from 'react-router-dom';
+import DatasetDetail from '../components/datasetDetail';
 
 const CheckData: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+
+  if (!id) {
+    return <div>잘못된 데이터셋 ID입니다.</div>;
+  }
+
   return (
-    <Container maxWidth="lg">
-      <Typography variant="h4" component="h1" gutterBottom>
-        데이터셋 검수
-      </Typography>
-      <UpdateDataset />
-    </Container>
+    <div>
+      <DatasetDetail id={id} />
+    </div>
   );
 };
 

@@ -22,7 +22,7 @@ export const createDataset = async (formData: FormData) => {
 
 export const getDatasets = async () => {
   try {
-    const response = await api.get('/datasets');
+    const response = await api.get('/data/datasets');
     return response.data;
   } catch (error) {
     console.error('데이터셋 목록 조회 중 오류 발생:', error);
@@ -30,23 +30,32 @@ export const getDatasets = async () => {
   }
 };
 
-// getDataset : 데이터셋 하나 조회
-//export const getDataset = async (datasetId: string) => {
-//  try {
-//    const response = await api.get(`/datasets/${datasetId}`);
-//    return response.data;
-//  } catch (error) {
-//    console.error('데이터셋 조회 중 오류 발생:', error);
-//    throw error;
-//  }
-//};
-
 export const saveDataset = async (dataset: any) => {
   try {
     const response = await api.post('/data/save-dataset', dataset);
     return response.data;
   } catch (error) {
     console.error('데이터셋 저장 중 오류 발생:', error);
+    throw error;
+  }
+};
+
+export const getDataset = async (id: string) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/data/dataset/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('데이터셋 가져오기 실패:', error);
+    throw error;
+  }
+};
+
+export const updateDataset = async (id: string, dataset: any) => {
+  try {
+    const response = await api.put(`/data/dataset/${id}`, dataset);
+    return response.data;
+  } catch (error) {
+    console.error('데이터셋 업데이트 중 오류 발생:', error);
     throw error;
   }
 };

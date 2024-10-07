@@ -52,13 +52,13 @@ const labelTranslations: Record<string, string> = {
 
 const CreateDataset: React.FC<CreateDatasetProps> = ({ dataset }) => {
   const navigate = useNavigate();
-  const [editedDataset, setEditedDataset] = useState<Dataset>(dataset);
+  const [editedDataset, setEditedDataset] = useState<Dataset & { title: string }>({ ...dataset, title: '' });
 
   const handleNextStep = async () => {
     try {
       const response = await saveDataset(editedDataset);
       if (response.success) {
-        navigate('/data/check');
+        navigate(`/data/datasets/${response.id}`);
       } else {
         console.error('데이터 저장 실패:', response.error);
       }
@@ -67,10 +67,10 @@ const CreateDataset: React.FC<CreateDatasetProps> = ({ dataset }) => {
     }
   };
 
-  const handleChange = (section: keyof Dataset, key: string, value: any) => {
-    setEditedDataset((prev: Dataset) => ({
+  const handleChange = (section: keyof (Dataset & { title: string }), key: string, value: any) => {
+    setEditedDataset((prev) => ({
       ...prev,
-      [section]: {
+      [section]: section === 'title' ? value : {
         ...prev[section],
         [key]: value
       }
@@ -211,6 +211,13 @@ const CreateDataset: React.FC<CreateDatasetProps> = ({ dataset }) => {
 
   return (
     <Box sx={{ p: 3 }}>
+      <TextField
+        fullWidth
+        label="데이터 이름"
+        value={editedDataset.title}
+        onChange={(e) => handleChange('title', 'title', e.target.value)}
+        sx={{ mb: 2 }}
+      />
       <Grid container spacing={4}>
         {/* 강사 프로필 섹션 */}
         <Grid item xs={12}>
