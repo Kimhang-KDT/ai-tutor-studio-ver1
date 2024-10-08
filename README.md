@@ -2,7 +2,12 @@
 
 ## client 실행 명령어
 
+node.js 설치
+
+cd client : 클라이언트 폴더로 이동
+
 npm install : 클라이언트 설치
+
 npm start : 클라이언트 실행
 
 ## server 실행 명령어
